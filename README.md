@@ -1,4 +1,4 @@
-# zentoken
+# zentoken [![Build Status][status-img]][status-url]
 
 Authentication like a zen.
 
@@ -95,3 +95,6 @@ axios.interceptors.request.use(zenInterceptor)
 ## API
 
 WIP.
+
+[status-url]: https://travis-ci.org/bigslycat/zentoken
+[status-img]: https://travis-ci.org/bigslycat/zentoken.svg?branch=master
