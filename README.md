@@ -25,7 +25,7 @@ const zen = new Zen({
   login(login, password) {
     return fetch('/api/refresh-tokens', {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login, password }),
     }).then(response => response.json())
   },
@@ -34,7 +34,7 @@ const zen = new Zen({
   fetchRefreshToken(refreshToken) {
     return fetch('/api/refresh-tokens', {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     }).then(response => response.json())
   },
@@ -43,7 +43,7 @@ const zen = new Zen({
   fetchAccessToken(refreshToken) {
     return fetch('/api/access-tokens', {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     }).then(response => response.json())
   },
