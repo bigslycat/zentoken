@@ -1,4 +1,4 @@
-# zentoken [![Build Status][status-img]][status-url]
+# zentoken [![Build Status][status-img]][status-url] [![Coverage Status][cover-img]][cover-url]
 
 Authentication like a zen.
 
@@ -98,3 +98,5 @@ WIP.
 
 [status-url]: https://travis-ci.org/bigslycat/zentoken
 [status-img]: https://travis-ci.org/bigslycat/zentoken.svg?branch=master
+[cover-url]: https://coveralls.io/github/bigslycat/zentoken?branch=master
+[cover-img]: https://coveralls.io/repos/github/bigslycat/zentoken/badge.svg?branch=master

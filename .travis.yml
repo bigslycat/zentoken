@@ -5,6 +5,7 @@ script:
   - yarn lint
   - yarn flow
   - yarn test
+  - yarn coverage
   - yarn run build
 deploy:
   skip_cleanup: true
