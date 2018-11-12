@@ -34,7 +34,7 @@ const subscribeToToken = (token, zen) => {
 }
 
 const saveRefreshToken = (zen: Zen) => {
-  const { warnFor } = getOptions(zen)
+  const { refreshOffset: warnFor } = getOptions(zen)
   return (response: {
     refreshToken: { expires: string | number | Date, value: string },
   }): t.Token => {
@@ -46,7 +46,7 @@ const saveRefreshToken = (zen: Zen) => {
 }
 
 const saveAccessToken = (zen: Zen) => {
-  const { warnFor } = getOptions(zen)
+  const { refreshOffset: warnFor } = getOptions(zen)
   return (response: {
     accessToken: { expires: string | number | Date, value: string },
   }): t.Token => {
@@ -135,7 +135,7 @@ const compile = (config: URLRules = defaultRule) => {
 }
 
 export type Options = {
-  warnFor: number,
+  refreshOffset: number,
 
   login(
     login: string,
