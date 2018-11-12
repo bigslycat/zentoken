@@ -27,7 +27,7 @@ test.beforeEach((t: any) => {
 
   fetchRefreshToken.rejects(new Error('Wrong refresh token'))
 
-  fetchAccessToken.withArgs('access 1').resolves({
+  fetchAccessToken.withArgs('refresh 1').resolves({
     accessToken: { value: 'access 2', expires: Date.now() },
   })
 
@@ -56,21 +56,50 @@ test('either :: Zen', t => {
     )
     .tapL(e => t.deepEqual(e, new Error('Not logged in')))
 
-  return zen.login('valid login', 'valid password').then(result => {
-    t.is(result.refreshToken.value, 'refresh 1')
-    t.is(result.accessToken.value, 'access 1')
+  return zen
+    .login('valid login', 'valid password')
+    .then(result => {
+      t.is(result.refreshToken.value, 'refresh 1')
+      t.is(result.accessToken.value, 'access 1')
 
-    zen
-      .either()
-      .tap(token => t.is(token, 'access 1'))
-      .tapL(e =>
-        t.fail(
-          `must return Right(String) when Zen is logged in, but it returned Left(Error("${
-            e.message
-          }"))`,
-        ),
-      )
-  })
+      zen
+        .either()
+        .tap(token => t.is(token, 'access 1'))
+        .tapL(e =>
+          t.fail(
+            `must return Right(String) when Zen is logged in, but it returned Left(Error("${
+              e.message
+            }"))`,
+          ),
+        )
+    })
+    .then(() => {
+      zen
+        .logout()
+        .either()
+        .tap(token =>
+          t.fail(
+            `must return Left(Error) when Zen isn't logged in, but it returned Right("${token}")`,
+          ),
+        )
+        .tapL(e => t.deepEqual(e, new Error('Not logged in')))
+    })
+    .then(() => zen.authByToken('refresh 1'))
+    .then(result => {
+      t.is(result.refreshToken.value, 'refresh 2')
+      t.is(result.accessToken.value, 'access 2')
+
+      zen
+        .either()
+        .tap(token => t.is(token, 'access 2'))
+        .tapL(e =>
+          t.fail(
+            `must return Right(String) when Zen is logged in, but it returned Left(Error("${
+              e.message
+            }"))`,
+          ),
+        )
+    })
 })
 
 test('maybe :: Zen', t => {
@@ -102,11 +131,12 @@ test('then :: Zen', t => {
   const zen = getZen(t)
 
   return zen
-    .then(token =>
-      t.fail(
-        "must return rejected Promise when Zen isn't logged in, " +
-          `but it returned resolved Promise("${token}")`,
-      ),
+    .then(
+      (token): void =>
+        t.fail(
+          "must return rejected Promise when Zen isn't logged in, " +
+            `but it returned resolved Promise("${token}")`,
+        ),
     )
     .catch(e => t.deepEqual(e, new Error('Not logged in')))
     .then(() =>
@@ -115,7 +145,7 @@ test('then :: Zen', t => {
         t.is(result.accessToken.value, 'access 1')
 
         return zen
-          .then(token => t.is(token, 'access 1'))
+          .then((token): void => t.is(token, 'access 1'))
           .catch(e =>
             t.fail(
               'must return resolved Promise(String) when Zen is logged in, ' +
