@@ -1,0 +1,69 @@
+{
+  "name": "zentoken",
+  "version": "1.0.0-beta.0",
+  "description": "Authentication like a zen",
+  "main": "lib/index.js",
+  "repository": "bigslycat/zentoken",
+  "author": "Pavel Tereschenko <me@stupidcat.wtf> (https://github.com/bigslycat)",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn build:cjs && yarn build:esm",
+    "build:cjs": "rollup -c",
+    "build:esm": "rm -rf esm && BABEL_ENV=esm node scripts/build-esm.js && yarn flow-entry",
+    "flow-entry": "cp lib/index.js.flow esm/index.js.flow",
+    "lint": "eslint .",
+    "flow": "flow",
+    "test": "ava --timeout=30s --verbose",
+    "test:nyc": "nyc ava --timeout=30s --verbose",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "preversion": "git checkout master && yarn lint && yarn flow",
+    "postversion": "git push --follow-tags"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint && yarn flow && yarn test"
+    }
+  },
+  "dependencies": {
+    "core-js": "^2.5.7",
+    "events": "^3.0.0",
+    "igogo": "^1.0.0-beta.9"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.5",
+    "@babel/preset-env": "^7.1.5",
+    "@babel/preset-flow": "^7.0.0",
+    "@babel/register": "^7.0.0",
+    "ava": "^1.0.0-rc.1",
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-istanbul": "^5.1.0",
+    "coveralls": "^3.0.2",
+    "eslint": "^5.9.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^3.3.0",
+    "eslint-plugin-flowtype": "^3.2.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-prettier": "^3.0.0",
+    "esm": "^3.0.84",
+    "flow-bin": "^0.86.0",
+    "flow-typed": "^2.5.1",
+    "husky": "^1.1.3",
+    "nyc": "^13.1.0",
+    "prettier": "^1.15.2",
+    "rollup": "^0.67.1",
+    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-flow-entry": "^0.2.0",
+    "rollup-plugin-node-resolve": "^3.4.0"
+  },
+  "keywords": [
+    "authentication",
+    "auth",
+    "tokens",
+    "token",
+    "axios",
+    "fetch"
+  ]
+}

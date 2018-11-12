@@ -1,0 +1,9 @@
+/node_modules
+/coverage
+/esm
+/lib
+/.nyc_output
+*.log
+*.log.*
+*.log-*
+*.log_*

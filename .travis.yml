@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+  - '10'
+script:
+  - yarn lint
+  - yarn flow
+  - yarn test
+  - yarn run build
+deploy:
+  skip_cleanup: true
+  provider: npm
+  email: me@stupidcat.wtf
+  on:
+    tags: true
+  branch: master
+  api_key:
+    secure: Nq+HDTxdZDzOeOZeDWslCns1iDF3g1dNe3K+6uW4koec9pXhjzU6rgeMkFHZvq7JH83mVgAZR7cLJZyipP8wu1NFNh3f1xIAKeY9XdxiCXpZcZ2OQ1lNvXaP/Gkapr1pBzLG5NOSfSpAkvv9gph9n9XAdrFFR77CHbceOQGfFeOlNY4o3zonTRXbhGBFZy4YFgvDn8/IMEeHZjFG6TqnXfdeRWKbusHn/+xvZnbAafDboDo985MdFN7oZ2J2McCe4HsXdEpmOQpitAv8lKH8QS0XCdhden+zw1V8YIl/+9rMK3lLdLXC5TBsn9571ijyxCxr0agtJYHDApMha3FxroP0YriGb4PnqAPRQ5tCBllcsZUpXY2ZQVTzfP1NNdn2/2tOJwDY2X6o4P4290zCNg5DH0U3oQYDhrTpVbMudoTZp1goNSdqHHvK/nSu+aBRFtK2vQjgsEi8iIMwElVyUi1geJ2rI2/OV+bHI7UNqbSPNcxVvI4Y6awP7DLmShyTpgZbu1ylrDx7kTg1AdTCdOGjgJ6GL9wpzY8oXDGPOG+gVJkTrCigFY4DirsWbVA0oi5sY3IHoQxx9B7PxlOmqmwKvCEdmi+ARB8gDFaxdG8AWohn7oBT6VcwCr2dDLXXorEtrihgbvk6zlog5HwBABWZeAlVJtAjOUI0nrFS5HE=
