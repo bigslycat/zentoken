@@ -4,7 +4,7 @@ node_js:
 script:
   - yarn lint
   - yarn flow
-  - yarn test
+  - yarn test:nyc
   - yarn coverage
   - yarn run build
 deploy:
