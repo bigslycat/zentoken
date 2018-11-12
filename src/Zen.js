@@ -12,24 +12,48 @@ const createEmitter = (): ZenEmitter => (new EventEmitter(): any)
 const [getOptions, setOptions] = getSet('options')
 
 // eslint-disable-next-line
-const [getAccessToken, setAccessToken] = getSet/* :: <i.Either<Error, t.Token>> */(
+const [getAccessToken, _setAccessToken] = getSet/* :: <i.Either<Error, t.Token>> */(
   'accessToken',
 )
 
 // eslint-disable-next-line
-const [getRefreshToken, setRefreshToken] = getSet/* :: <i.Either<Error, t.Token>> */(
+const [getRefreshToken, _setRefreshToken] = getSet/* :: <i.Either<Error, t.Token>> */(
   'refreshToken',
 )
 
 const [getEmitter, setEmitter] = getSet('emitter')
 
-const emitEvent = zen => event => token =>
-  getEmitter(zen).emit(event, token.toData())
+const linkEvents = (zen: Zen) => {
+  const emitter = getEmitter(zen)
 
-const subscribeToToken = (token, zen) => {
-  const emit = emitEvent(zen)
-  token.on('warn', emit('token warn'))
-  token.on('expire', emit('token expire'))
+  const tokenWarn = token => emitter.emit('token warn', token.toData())
+  const tokenExpire = token => emitter.emit('token expire', token.toData())
+
+  return {
+    subscribe(token) {
+      token.on('warn', tokenWarn)
+      token.on('expire', tokenExpire)
+    },
+    unsubscribe(token) {
+      token.off('warn', tokenWarn)
+      token.off('expire', tokenExpire)
+    },
+  }
+}
+
+const setAccessToken = (zen: Zen, newTokenEither: i.Either<Error, t.Token>) => {
+  const { subscribe, unsubscribe } = linkEvents(zen)
+  getAccessToken(zen).tap(unsubscribe)
+  return _setAccessToken(zen, newTokenEither).tap(subscribe)
+}
+
+const setRefreshToken = (
+  zen: Zen,
+  newTokenEither: i.Either<Error, t.Token>,
+) => {
+  const { subscribe, unsubscribe } = linkEvents(zen)
+  getRefreshToken(zen).tap(unsubscribe)
+  return _setRefreshToken(zen, newTokenEither).tap(subscribe)
 }
 
 const saveRefreshToken = (zen: Zen) => {
@@ -38,7 +62,6 @@ const saveRefreshToken = (zen: Zen) => {
     refreshToken: { expires: string | number | Date, value: string },
   }): t.Token => {
     const token = t.of({ ...response.refreshToken, warnFor, type: 'refresh' })
-    subscribeToToken(token, zen)
     setRefreshToken(zen, i.Right(token))
     return token
   }
@@ -50,7 +73,6 @@ const saveAccessToken = (zen: Zen) => {
     accessToken: { expires: string | number | Date, value: string },
   }): t.Token => {
     const token = t.of({ ...response.accessToken, warnFor, type: 'access' })
-    subscribeToToken(token, zen)
     setAccessToken(zen, i.Right(token))
     return token
   }
@@ -173,8 +195,8 @@ export class Zen {
   constructor(options: Options): Zen {
     setOptions(this, options)
 
-    setAccessToken(this, notLoggedIn())
-    setRefreshToken(this, notLoggedIn())
+    _setAccessToken(this, notLoggedIn())
+    _setRefreshToken(this, notLoggedIn())
 
     const emitter = createEmitter()
 
