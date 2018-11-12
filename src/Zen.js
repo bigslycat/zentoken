@@ -30,7 +30,6 @@ const subscribeToToken = (token, zen) => {
   const emit = emitEvent(zen)
   token.on('warn', emit('token warn'))
   token.on('expire', emit('token expire'))
-  token.on('revoke', emit('token revoke'))
 }
 
 const saveRefreshToken = (zen: Zen) => {
@@ -93,21 +92,21 @@ const validEvents: [
   'auth by token success',
   'login fail',
   'auth by token fail',
+  'logout',
   'fetch token fail',
   'token refresh',
   'token warn',
   'token expire',
-  'token revoke',
 ] = [
   'login success',
   'auth by token success',
   'login fail',
   'auth by token fail',
+  'logout',
   'fetch token fail',
   'token refresh',
   'token warn',
   'token expire',
-  'token revoke',
 ]
 
 type EventName = $Call<<T>($ReadOnlyArray<T>) => T, typeof validEvents>
@@ -190,7 +189,7 @@ export class Zen {
 
     emitter.on('token warn', token =>
       getRefreshToken(this)
-        .chain(t.usable)
+        .chain(t.expired)
         .promise()
         .then(
           token.type === 'refresh'
@@ -201,23 +200,27 @@ export class Zen {
         .catch(emitFetchFail),
     )
 
-    const onLogout = () => {
-      setAccessToken(this, notLoggedIn())
-      setRefreshToken(this, notLoggedIn())
-    }
-
-    emitter.on('token expire', token =>
-      token.type === 'access'
-        ? getRefreshToken(this)
-            .chain(t.usable)
+    emitter.on('token expire', token => {
+      switch (token.type) {
+        case 'access':
+          getRefreshToken(this)
+            .chain(t.expired)
             .promise()
             .then(fetchAccessToken(this))
             .then(emitRefresh)
             .catch(emitFetchFail)
-        : onLogout(),
-    )
+          break
 
-    emitter.on('token revoke', onLogout)
+        case 'refresh':
+          setAccessToken(this, notLoggedIn())
+          setRefreshToken(this, notLoggedIn())
+          break
+
+        default:
+          /* :: (token.type: empty) */
+          throw new Error('Unknown token type')
+      }
+    })
 
     /* :: return this */
   }
@@ -282,7 +285,9 @@ export class Zen {
   }
 
   logout() {
-    getRefreshToken(this).tap(t.revoke)
+    setAccessToken(this, notLoggedIn())
+    setRefreshToken(this, notLoggedIn())
+    getEmitter(this).emit('logout')
     return this
   }
 
@@ -298,10 +303,13 @@ export class Zen {
       eventName: 'login fail' | 'auth by token fail' | 'fetch token fail',
       listener: (Error) => mixed) => Zen) &
     ((
-      eventName: 'token refresh' | 'token warn' | 'token expire' | 'token revoke',
+      eventName: 'logout',
+      listener: () => mixed) => Zen) &
+    ((
+      eventName: 'token refresh' | 'token warn' | 'token expire',
       listener: (token: { value: string, expires:Date, type: t.Type }) => mixed,
     ) => Zen) & (
-      eventName: 'token refresh' | 'token warn' | 'token expire' | 'token revoke',
+      eventName: 'token refresh' | 'token warn' | 'token expire',
       listener: (token: { value: string, expires: Date, type: t.Type }) => mixed,
     ) => Zen
 
@@ -325,19 +333,23 @@ export class Zen {
   }
 
   /* ::
-  +then: ((onFulfill?: void | null) => Promise<string>) &
-    (<T>(
-      onFulfill?: void | null,
-      onReject: (Error) => Promise<T> | T,
-    ) => Promise<string | T>) &
+  +then: ((onFulfill?: void | null, ...void[]) => Promise<string>) &
     (<T>(
       onFulfill: (string) => Promise<T> | T,
-      onReject?: (Error) => Promise<T> | T,
-    ) => Promise<T>)
+      ...void[]
+    ) => Promise<T>) &
+    (<T>(
+      onFulfill: void | null,
+      onReject: (Error) => Promise<T> | T,
+    ) => Promise<string | T>) &
+    (<T1, T2>(
+      onFulfill: (string) => Promise<T1> | T1,
+      onReject: (Error) => Promise<T2> | T2,
+    ) => Promise<T1 | T2>)
 
   */
 
-  then(onFulfill: string => mixed, onReject: Error => mixed) {
+  then(onFulfill: string => mixed, onReject: Error => mixed): Promise<any> {
     return getAccessToken(this)
       .map(t.value)
       .promise()
@@ -429,13 +441,16 @@ interface ZenEmitter {
     Error,
   ): ZenEmitter;
 
+  on(eventName: 'logout', listener: () => mixed): Zen;
+  emit(eventName: 'logout'): Zen;
+
   on(
-    eventName: 'token refresh' | 'token warn' | 'token expire' | 'token revoke',
+    eventName: 'token refresh' | 'token warn' | 'token expire',
     listener: (token: { value: string, expires: Date, type: t.Type }) => mixed,
   ): ZenEmitter;
 
   emit(
-    eventName: 'token refresh' | 'token warn' | 'token expire' | 'token revoke',
+    eventName: 'token refresh' | 'token warn' | 'token expire',
     token: { value: string, expires: Date, type: t.Type },
   ): ZenEmitter;
 }

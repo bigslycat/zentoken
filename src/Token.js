@@ -15,13 +15,10 @@ const [getEmitter, setEmitter] = getSet('emitter')
 // eslint-disable-next-line
 const [getExpired, setExpired] = getSet/* :: <i.Either<Error, Token>> */('expired')
 
-// eslint-disable-next-line
-const [getRevoked, setRevoked] = getSet/* :: <i.Either<Error, Token>> */('revoked')
-
 const getTimeOffset = (date: Date, before: number = 0) =>
   Math.max(0, date.getTime() - Date.now() - before)
 
-type EventName = 'warn' | 'expire' | 'revoke'
+type EventName = 'warn' | 'expire'
 
 interface TokenEmitter {
   on(eventName: EventName, listener: (Token) => mixed): TokenEmitter;
@@ -62,9 +59,6 @@ export type Options = {
 const expiredError = token =>
   i.Left(new Error(`${getType(token)} token ${getValue(token)} expired`))
 
-const revokedError = token =>
-  i.Left(new Error(`${getType(token)} token ${getValue(token)} revoked`))
-
 export class Token {
   static of(options: Options): Token {
     return new Token(options)
@@ -76,8 +70,6 @@ export class Token {
     setExpired(this, i.Right(this))
     setWarnFor(this, options.warnFor)
     setType(this, options.type)
-
-    setRevoked(this, i.Right(this))
 
     const emitter = createEmitter()
 
@@ -114,14 +106,6 @@ export class Token {
     return getExpired(this)
   }
 
-  revoked(): i.Either<Error, Token> {
-    return getRevoked(this)
-  }
-
-  usable(): i.Either<Error, Token> {
-    return this.revoked().and(this.expired())
-  }
-
   on(eventName: EventName, listener: Token => mixed): Token {
     getEmitter(this).on(eventName, listener)
     return this
@@ -129,12 +113,6 @@ export class Token {
 
   off(eventName: EventName, listener: Token => mixed): Token {
     getEmitter(this).off(eventName, listener)
-    return this
-  }
-
-  revoke(): Token {
-    setRevoked(this, revokedError(this))
-    getEmitter(this).emit('revoke', this)
     return this
   }
 
@@ -168,5 +146,4 @@ export class Token {
 export const { of } = Token
 
 export const value = (token: Token) => token.value
-export const revoke = (token: Token) => token.revoke()
-export const usable = (token: Token) => token.usable()
+export const expired = (token: Token) => token.expired()
