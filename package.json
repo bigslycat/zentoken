@@ -6,6 +6,14 @@
   "repository": "bigslycat/zentoken",
   "author": "Pavel Tereschenko <me@stupidcat.wtf> (https://github.com/bigslycat)",
   "license": "MIT",
+  "main": "lib/index.js",
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "lib",
+    "esm",
+    "src"
+],
   "scripts": {
     "build": "yarn build:cjs && yarn build:esm",
     "build:cjs": "rollup -c",
