@@ -28,17 +28,13 @@ test('type :: Token', t =>
 test.cb('expired :: Token', t => {
   const token = of()
 
-  setTimeout(
-    () =>
-      token
-        .expired()
-        .tapL(() =>
-          t.fail(
-            'must return Right(Token) when token not expired, but it returned Left(Error)',
-          ),
-        ),
-    expiresOffset - 50,
-  )
+  token
+    .expired()
+    .tapL(() =>
+      t.fail(
+        'must return Right(Token) when token not expired, but it returned Left(Error)',
+      ),
+    )
 
   setTimeout(
     () =>
@@ -50,6 +46,6 @@ test.cb('expired :: Token', t => {
             'must return Left(Error) when token expired, but it returned Right(Token)',
           ),
         ),
-    expiresOffset + 50,
+    expiresOffset + 100,
   )
 })
