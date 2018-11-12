@@ -1,6 +1,6 @@
 {
   "name": "zentoken",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Authentication like a zen",
   "repository": "bigslycat/zentoken",
   "author": "Pavel Tereschenko <me@stupidcat.wtf> (https://github.com/bigslycat)",
