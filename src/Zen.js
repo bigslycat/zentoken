@@ -23,37 +23,22 @@ const [getRefreshToken, _setRefreshToken] = getSet/* :: <i.Either<Error, t.Token
 
 const [getEmitter, setEmitter] = getSet('emitter')
 
-const linkEvents = (zen: Zen) => {
+const subscribe = zen => {
   const emitter = getEmitter(zen)
-
-  const tokenWarn = token => emitter.emit('token warn', token.toData())
-  const tokenExpire = token => emitter.emit('token expire', token.toData())
-
-  return {
-    subscribe(token) {
-      token.on('warn', tokenWarn)
-      token.on('expire', tokenExpire)
-    },
-    unsubscribe(token) {
-      token.off('warn', tokenWarn)
-      token.off('expire', tokenExpire)
-    },
+  return token => {
+    token.on('warn', tkn => emitter.emit('token warn', tkn.toData()))
+    token.on('expire', tkn => emitter.emit('token expire', tkn.toData()))
   }
 }
 
-const setAccessToken = (zen: Zen, newTokenEither: i.Either<Error, t.Token>) => {
-  const { subscribe, unsubscribe } = linkEvents(zen)
-  getAccessToken(zen).tap(unsubscribe)
-  return _setAccessToken(zen, newTokenEither).tap(subscribe)
+const setAccessToken = (zen: Zen, either: i.Either<Error, t.Token>) => {
+  getAccessToken(zen).tap(t.removeAllListeners())
+  return _setAccessToken(zen, either).tap(subscribe(zen))
 }
 
-const setRefreshToken = (
-  zen: Zen,
-  newTokenEither: i.Either<Error, t.Token>,
-) => {
-  const { subscribe, unsubscribe } = linkEvents(zen)
-  getRefreshToken(zen).tap(unsubscribe)
-  return _setRefreshToken(zen, newTokenEither).tap(subscribe)
+const setRefreshToken = (zen: Zen, either: i.Either<Error, t.Token>) => {
+  getRefreshToken(zen).tap(t.removeAllListeners())
+  return _setRefreshToken(zen, either).tap(subscribe(zen))
 }
 
 const saveRefreshToken = (zen: Zen) => {
@@ -198,16 +183,12 @@ export class Zen {
     _setAccessToken(this, notLoggedIn())
     _setRefreshToken(this, notLoggedIn())
 
-    const emitter = createEmitter()
-
-    setEmitter(this, createEmitter())
+    const emitter = setEmitter(this, createEmitter()).setMaxListeners(Infinity)
 
     const emitRefresh = newToken =>
       emitter.emit('token refresh', newToken.toData())
-    const emitFetchFail = e => {
-      emitter.emit('fetch token fail', e)
-      return Promise.reject(e)
-    }
+
+    const emitFetchFail = e => emitter.emit('fetch token fail', e)
 
     emitter.on('token warn', token =>
       getRefreshToken(this)
@@ -339,13 +320,12 @@ export class Zen {
   */
 
   on(eventName: EventName, listener: Function): Zen {
-    const emitter = getEmitter(this)
-
     if (!validEvents.includes(eventName)) {
       throw new Error(`Unknown event name: ${eventName}`)
     }
 
-    emitter.on(eventName, listener)
+    getEmitter(this).on(eventName, listener)
+
     return this
   }
 
@@ -376,16 +356,6 @@ export class Zen {
       .map(t.value)
       .promise()
       .then(onFulfill, onReject)
-  }
-
-  maybe(): i.Maybe<string> {
-    return getAccessToken(this)
-      .toMaybe()
-      .map(t.value)
-  }
-
-  either(): i.Either<Error, string> {
-    return getAccessToken(this).map(t.value)
   }
 
   wrapFetch(
@@ -438,6 +408,9 @@ export class Zen {
 }
 
 interface ZenEmitter {
+  removeAllListeners(eventName: EventName): ZenEmitter;
+  setMaxListeners(count: number): ZenEmitter;
+
   off(eventName: string, listener: Function): ZenEmitter;
 
   on(
