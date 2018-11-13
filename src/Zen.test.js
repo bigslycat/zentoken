@@ -5,7 +5,13 @@ import sinon from 'sinon'
 
 import { Zen } from './Zen'
 
-test.beforeEach((t: any) => {
+const clock = sinon.useFakeTimers({
+  now: new Date(1987, 3, 18),
+})
+
+test.beforeEach(t => {
+  clock.reset()
+
   const login = sinon.stub()
   const fetchRefreshToken = sinon.stub()
   const fetchAccessToken = sinon.stub()
@@ -46,118 +52,66 @@ test.beforeEach((t: any) => {
     fetchAccessToken,
   })
 
-  // eslint-disable-next-line
-  t.context.zen = zen
+  Object.assign((t.context: any), { zen })
 })
 
 const getZen = (t): Zen => (t.context: any).zen
 
-test('either :: Zen', t => {
+test('login :: Zen', async t => {
   const zen = getZen(t)
 
-  zen
-    .either()
-    .tap(token =>
-      t.fail(
-        `must return Left(Error) when Zen isn't logged in, but it returned Right("${token}")`,
-      ),
-    )
-    .tapL(e => t.deepEqual(e, new Error('Not logged in')))
+  await zen
+    .login('invalid login', 'invalid password')
+    .then(() => t.fail())
+    .catch(e => t.deepEqual(e, new Error('Wrong login or password')))
 
-  return zen
-    .login('valid login', 'valid password')
-    .then(result => {
-      t.is(result.refreshToken.value, 'refresh 1')
-      t.is(result.accessToken.value, 'access 1')
+  t.deepEqual(await zen.login('valid login', 'valid password'), {
+    refreshToken: {
+      value: 'refresh 1',
+      type: 'refresh',
+      expires: new Date(Date.now() + 1000),
+    },
+    accessToken: {
+      value: 'access 1',
+      type: 'access',
+      expires: new Date(Date.now() + 1000),
+    },
+  })
 
-      zen
-        .either()
-        .tap(token => t.is(token, 'access 1'))
-        .tapL(e =>
-          t.fail(
-            `must return Right(String) when Zen is logged in, but it returned Left(Error("${
-              e.message
-            }"))`,
-          ),
-        )
-    })
-    .then(() => {
-      zen
-        .logout()
-        .either()
-        .tap(token =>
-          t.fail(
-            `must return Left(Error) when Zen isn't logged in, but it returned Right("${token}")`,
-          ),
-        )
-        .tapL(e => t.deepEqual(e, new Error('Not logged in')))
-    })
-    .then(() => zen.authByToken('refresh 1'))
-    .then(result => {
-      t.is(result.refreshToken.value, 'refresh 2')
-      t.is(result.accessToken.value, 'access 2')
-
-      zen
-        .either()
-        .tap(token => t.is(token, 'access 2'))
-        .tapL(e =>
-          t.fail(
-            `must return Right(String) when Zen is logged in, but it returned Left(Error("${
-              e.message
-            }"))`,
-          ),
-        )
-    })
+  t.is(await zen, 'access 1')
 })
 
-test('maybe :: Zen', t => {
+test('authByToken :: Zen', async t => {
   const zen = getZen(t)
 
-  zen
-    .maybe()
-    .tap(token =>
-      t.fail(
-        `must return Nothing when Zen isn't logged in, but it returned Just("${token}")`,
-      ),
-    )
+  await zen
+    .authByToken('invalid refresh token')
+    .then(() => t.fail())
+    .catch(e => t.deepEqual(e, new Error('Wrong refresh token')))
 
-  return zen
-    .login('valid login', 'valid password')
-    .then(result => {
-      t.is(result.refreshToken.value, 'refresh 1')
-      t.is(result.accessToken.value, 'access 1')
+  t.deepEqual(await zen.authByToken('refresh 1'), {
+    refreshToken: {
+      value: 'refresh 2',
+      type: 'refresh',
+      expires: new Date(Date.now() + 2000),
+    },
+    accessToken: {
+      value: 'access 2',
+      type: 'access',
+      expires: new Date(Date.now() + 2000),
+    },
+  })
 
-      zen
-        .maybe()
-        .toEither(
-          'must return Just(String) when Zen is logged in, but it returned Nothing',
-        )
-        .tap(token => t.is(token, 'access 1'))
-        .tapL(t.fail)
-    })
-    .then(() =>
-      zen
-        .logout()
-        .maybe()
-        .tap(token =>
-          t.fail(
-            `must return Nothing when Zen isn't logged in, but it returned Just("${token}")`,
-          ),
-        ),
-    )
-    .then(() => zen.authByToken('refresh 1'))
-    .then(result => {
-      t.is(result.refreshToken.value, 'refresh 2')
-      t.is(result.accessToken.value, 'access 2')
+  t.is(await zen, 'access 2')
+})
 
-      zen
-        .maybe()
-        .toEither(
-          'must return Just(String) when Zen is logged in, but it returned Nothing',
-        )
-        .tap(token => t.is(token, 'access 2'))
-        .tapL(t.fail)
-    })
+test('logout :: Zen', async t => {
+  const zen = getZen(t)
+  await zen.authByToken('refresh 1')
+  await zen
+    .logout()
+    .then()
+    .catch(e => t.deepEqual(e, new Error('Not logged in')))
 })
 
 test('then :: Zen', t => {
@@ -172,95 +126,105 @@ test('then :: Zen', t => {
         ),
     )
     .catch(e => t.deepEqual(e, new Error('Not logged in')))
-    .then(() => zen.login('valid login', 'valid password'))
-    .then(result => {
-      t.is(result.refreshToken.value, 'refresh 1')
-      t.is(result.accessToken.value, 'access 1')
-
-      return zen
-        .then((token): void => t.is(token, 'access 1'))
-        .catch(e =>
-          t.fail(
-            'must return resolved Promise(String) when Zen is logged in, ' +
-              `but it returned rejected Promise with Error("${e.message}")`,
-          ),
-        )
-    })
-    .then(() =>
-      zen
-        .logout()
-        .then(
-          (token): void =>
-            t.fail(
-              "must return rejected Promise when Zen isn't logged in, " +
-                `but it returned resolved Promise("${token}")`,
-            ),
-        )
-        .catch(e => t.deepEqual(e, new Error('Not logged in'))),
-    )
-    .then(() => zen.authByToken('refresh 1'))
-    .then(result => {
-      t.is(result.refreshToken.value, 'refresh 2')
-      t.is(result.accessToken.value, 'access 2')
-
-      return zen
-        .then((token): void => t.is(token, 'access 2'))
-        .catch(e =>
-          t.fail(
-            'must return resolved Promise(String) when Zen is logged in, ' +
-              `but it returned rejected Promise with Error("${e.message}")`,
-          ),
-        )
-    })
 })
 
-test.cb('on :: Zen', t => {
+test('LoginSuccessEvent :: Zen', async t => {
   const zen = getZen(t)
+  const listener = sinon.stub()
+  await zen.on('login success', listener).login('valid login', 'valid password')
+  t.is(listener.callCount, 1)
+  t.deepEqual(listener.lastCall.args, [
+    {
+      value: 'refresh 1',
+      type: 'refresh',
+      expires: new Date(Date.now() + 1000),
+    },
+    {
+      value: 'access 1',
+      type: 'access',
+      expires: new Date(Date.now() + 1000),
+    },
+  ])
+})
 
-  const loginSuccess = sinon.stub()
-  const loginFail = sinon.stub()
-  const authByTokenSuccess = sinon.stub()
-  const authByTokenFail = sinon.stub()
-  const fetchTokenFail = sinon.stub()
-  const tokenRefresh = sinon.stub()
-  const tokenWarn = sinon.stub()
-  const tokenExpire = sinon.stub()
+test('LoginFailEvent :: Zen', async t => {
+  const zen = getZen(t)
+  const listener = sinon.stub()
+  await zen
+    .on('login fail', listener)
+    .login('invalid login', 'invalid password')
+    .catch(e => e)
+  t.is(listener.callCount, 1)
+  t.deepEqual(listener.lastCall.args, [new Error('Wrong login or password')])
+})
 
-  const logout = sinon
-    .stub()
-    .onCall(1)
-    .callsFake(() => {})
+test('AuthByTokenSuccessEvent :: Zen', async t => {
+  const zen = getZen(t)
+  const listener = sinon.stub()
+  await zen.on('auth by token success', listener).authByToken('refresh 1')
+  t.is(listener.callCount, 1)
+  t.deepEqual(listener.lastCall.args, [
+    {
+      value: 'refresh 2',
+      type: 'refresh',
+      expires: new Date(Date.now() + 2000),
+    },
+    {
+      value: 'access 2',
+      type: 'access',
+      expires: new Date(Date.now() + 2000),
+    },
+  ])
+})
 
-  zen.on('login success', loginSuccess)
-  zen.on('login fail', loginFail)
-  zen.on('auth by token success', authByTokenSuccess)
-  zen.on('auth by token fail', authByTokenFail)
-  zen.on('logout', logout)
-  zen.on('fetch token fail', fetchTokenFail)
-  zen.on('token refresh', tokenRefresh)
-  zen.on('token warn', tokenWarn)
-  zen.on('token expire', tokenExpire)
+test('AuthByTokenFailEvent :: Zen', async t => {
+  const zen = getZen(t)
+  const listener = sinon.stub()
+  await zen
+    .on('auth by token fail', listener)
+    .authByToken('invalid token')
+    .catch(e => e)
+  t.is(listener.callCount, 1)
+  t.deepEqual(listener.lastCall.args, [new Error('Wrong refresh token')])
+})
+
+test.serial('TokenWarnEvent :: Zen', async t => {
+  const zen = getZen(t)
+  const listener = sinon.stub()
+  await zen.on('token warn', listener).authByToken('refresh 2')
+
+  clock.tick(2499)
+  t.is(listener.callCount, 0)
+
+  clock.tick(1)
+  t.is(listener.callCount, 2)
+
+  t.deepEqual(listener.getCall(0).args, [
+    {
+      expires: new Date(Date.now() + 500),
+      type: 'refresh',
+      value: 'refresh 3',
+    },
+  ])
+
+  t.deepEqual(listener.getCall(1).args, [
+    {
+      expires: new Date(Date.now() + 500),
+      type: 'access',
+      value: 'access 3',
+    },
+  ])
+})
+
+test.serial.cb('FetchTokenFailEvent :: Zen', t => {
+  const zen = getZen(t)
+  const listener = sinon.stub().callsFake(() => {
+    t.deepEqual(listener.lastCall.args, [new Error('Wrong refresh token')])
+    if (listener.callCount === 2) t.end()
+  })
 
   zen
-    .login('invalid login', 'invalid password')
-    .catch(() =>
-      t.deepEqual(
-        loginFail.getCall(0).args[0],
-        new Error('Wrong login or password'),
-      ),
-    )
-    .then(() => zen.login('valid login', 'valid password'))
-    .then(() => {
-      const { args } = loginSuccess.getCall(0)
-
-      t.is(loginSuccess.getCalls().length, 1)
-      t.is(args[0].type, 'refresh')
-      t.is(args[0].value, 'refresh 1')
-      t.is(args[1].type, 'access')
-      t.is(args[1].value, 'access 1')
-    })
-    .then(() => {
-      zen.logout()
-      t.end()
-    })
+    .on('fetch token fail', listener)
+    .authByToken('refresh 2')
+    .then(() => clock.tick(2500))
 })
