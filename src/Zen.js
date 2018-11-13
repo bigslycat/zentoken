@@ -23,13 +23,10 @@ const [getRefreshToken, _setRefreshToken] = getSet/* :: <i.Either<Error, t.Token
 
 const [getEmitter, setEmitter] = getSet('emitter')
 
-const subscribe = zen => {
-  const emitter = getEmitter(zen)
-  return token => {
-    token.on('warn', tkn => emitter.emit('token warn', tkn.toData()))
-    token.on('expire', tkn => emitter.emit('token expire', tkn.toData()))
-  }
-}
+const subscribe = zen => token =>
+  token
+    .on('warn', tkn => getEmitter(zen).emit('token warn', tkn.toData()))
+    .on('expire', tkn => getEmitter(zen).emit('token expire', tkn.toData()))
 
 const setAccessToken = (zen: Zen, either: i.Either<Error, t.Token>) => {
   getAccessToken(zen).tap(t.removeAllListeners())
