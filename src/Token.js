@@ -21,6 +21,7 @@ const getTimeOffset = (date: Date, before: number = 0) =>
 type EventName = 'warn' | 'expire'
 
 interface TokenEmitter {
+  setMaxListeners(count: number): TokenEmitter;
   on(eventName: EventName, listener: (Token) => mixed): TokenEmitter;
   addListener(eventName: EventName, listener: (Token) => mixed): TokenEmitter;
   once(eventName: EventName, listener: (Token) => mixed): TokenEmitter;
@@ -71,9 +72,7 @@ export class Token {
     setWarnFor(this, options.warnFor)
     setType(this, options.type)
 
-    const emitter = createEmitter()
-
-    setEmitter(this, emitter)
+    const emitter = setEmitter(this, createEmitter()).setMaxListeners(Infinity)
 
     setTimeout(() => {
       setExpired(this, expiredError(this))
@@ -116,6 +115,11 @@ export class Token {
     return this
   }
 
+  removeAllListeners(eventName?: EventName): Token {
+    getEmitter(this).removeAllListeners(eventName)
+    return this
+  }
+
   toData() {
     return {
       value: this.value,
@@ -147,3 +151,6 @@ export const { of } = Token
 
 export const value = (token: Token) => token.value
 export const expired = (token: Token) => token.expired()
+
+export const removeAllListeners = (eventName?: EventName) => (token: Token) =>
+  token.removeAllListeners(eventName)
