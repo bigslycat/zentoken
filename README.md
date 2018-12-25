@@ -1,5 +1,7 @@
-# zentoken [![Build Status][status-img]][status-url] [![Coverage Status][cover-img]][cover-url]
+# zentoken
 
+[![Build Status][status-img]][status-url]
+[![Coverage Status][cover-img]][cover-url]
 [![Greenkeeper badge](https://badges.greenkeeper.io/bigslycat/zentoken.svg)](https://greenkeeper.io/)
 
 Authentication like a zen.
