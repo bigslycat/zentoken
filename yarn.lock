@@ -2248,6 +2248,11 @@ esm@^3.0.84:
   resolved "https://registry.yarnpkg.com/esm/-/esm-3.0.84.tgz#bb108989f4673b32d4f62406869c28eed3815a63"
   integrity sha512-SzSGoZc17S7P+12R9cg21Bdb7eybX25RnIeRZ80xZs+VZ3kdQKzqTp2k4hZJjR7p9l0186TTXSgrxzlMDBktlw==
 
+esm@^3.2.2:
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.2.tgz#3b1c08e9c60da240a17a9fff31107058fb80833c"
+  integrity sha512-eucVGbB9w4SqxpVrlvkJ368IY7M9ATb4EXvx9Wk2qb8Kao6tvVPxj6+jBw2gwS+3kjPUjkj3NnDwsPsQeRg0+g==
+
 espower-location-detector@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/espower-location-detector/-/espower-location-detector-1.0.0.tgz#a17b7ecc59d30e179e2bef73fb4137704cb331b5"
