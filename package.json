@@ -32,7 +32,7 @@
     }
   },
   "dependencies": {
-    "core-js": "^2.5.7",
+    "core-js": "^3.0.1",
     "events": "^3.0.0",
     "igogo": "^1.0.0-beta.9"
   },
